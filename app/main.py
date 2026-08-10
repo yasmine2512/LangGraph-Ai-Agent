@@ -1,6 +1,9 @@
 from app.graph import graph
+from app.database.DbConnection import test_connection
+
 
 def main():
+    test_connection()
     print("AI Agent started!")
     print("Type 'exit' to quit.\n")
 

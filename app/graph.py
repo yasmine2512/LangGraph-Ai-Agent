@@ -3,14 +3,19 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_ollama import ChatOllama
 from app.state import AgentState
-from app.tools import get_products,get_orders,get_customers,get_customer,get_order,get_product
+from bson import ObjectId
+from app.tools.customers import customer_tools
+from app.tools.orders import order_tools
+from app.tools.products import product_tools
 
 llm = ChatOllama(
     model="gpt-oss:20b-cloud",
     temperature=0
 )
 
-tools = [get_products,get_orders,get_customers,get_customer,get_order,get_product]
+organization_id = ObjectId("69d7d122f1b2c8ffe9d9c781")
+
+tools = [*product_tools(organization_id),*order_tools(organization_id),*customer_tools(organization_id)]
 llm_with_tools = llm.bind_tools(tools)
 
 
