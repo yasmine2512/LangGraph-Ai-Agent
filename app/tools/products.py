@@ -1,5 +1,6 @@
 from langchain_core.tools import tool
 from app.database.DbConnection import db
+from bson import ObjectId
 
 def product_tools(organization_id: str):
 
@@ -14,7 +15,16 @@ def product_tools(organization_id: str):
         price_max: float | None = None,
     ):
         """
-        Get products belonging to the current organization.
+        Get information about multiple products.
+
+        Use this tool when you need to:
+        - search for products
+        - retrieve multiple products
+        - filter products by name, SKU, category, price, or stock
+        - find products when you do not already have a specific product ID
+
+        If you already have a specific product ID and only need that
+        product's information, use get_product instead.
 
         Optional filters:
         - name: product name
@@ -65,23 +75,41 @@ def product_tools(organization_id: str):
         return list(
             db.products.find(
                 query,
-                {"_id": 0}
+                {"_id": 0,"image": 0}
             ).limit(100)
         )
 
 
     @tool
     def get_product(product_id: str):
-        """Get a specific product using its product ID."""
+        """
+        Get detailed information about a specific product using its product ID.
+
+        Use this tool when you already have a specific product ID and need:
+        - product name
+        - SKU
+        - price
+        - stock
+        - category
+        - description
+        - features
+
+        Do NOT use this tool to search for products or retrieve multiple
+        products. Use get_products instead.
+
+        Do NOT use this tool to determine which product sells the most,
+        generates the most revenue, or other sales analytics. Use
+        analyze_orders instead.
+        """
 
         product = db.products.find_one(
-            {"organization": organization_id,"_id": product_id},
-            {"_id": 0}
+            {"organization": organization_id,"_id": ObjectId(product_id)},
+            {"_id": 0,"image": 0}
         )
 
         if not product:
             return {
-                "error": f"Product {product_id} not found"
+                "error": f"Product {ObjectId(product_id)} not found"
             }
 
         return product
