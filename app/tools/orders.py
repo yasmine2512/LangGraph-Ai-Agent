@@ -23,6 +23,8 @@ def order_tools(organization_id: str):
         completed_at_from: str | None = None,
         completed_at_to: str | None = None,
         product_id: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
     ):
         """
         Retrieve ORDER information.
@@ -43,6 +45,12 @@ def order_tools(organization_id: str):
         - completed_at_from: minimum completion date, ISO format
         - completed_at_to: maximum completion date, ISO format
         - product_id: filter orders containing this product
+
+        Pagination:
+                - page starts at 1
+                - page_size controls the number of customers returned
+                - default page_size is 20
+                - maximum page_size is 20
 
         Use only the filters relevant to the user's request.
         """
@@ -82,12 +90,26 @@ def order_tools(organization_id: str):
                 }
             }
 
-        return list(
-            db.orders.find(
-                query,
-                {"_id": 0}
-            ).limit(100)
+        page = max(1, page)
+        page_size = min(max(1, page_size), 20)
+        
+        skip = (page - 1) * page_size       
+
+        orders = list(
+        db.orders.find(
+            query,
+            {"_id": 0}
         )
+        .sort("createdAt", -1)
+        .skip(skip)
+        .limit(page_size)
+    )
+        return {
+            "page": page,
+            "page_size": page_size,
+            "orders": orders
+        }    
+
 
     @tool
     def count_orders(

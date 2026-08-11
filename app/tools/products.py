@@ -13,6 +13,8 @@ def product_tools(organization_id: str):
         category: str | None = None,
         price_min: float | None = None,
         price_max: float | None = None,
+        page: int = 1,
+        page_size: int = 20,
     ):
         """
         Get information about multiple products.
@@ -34,6 +36,12 @@ def product_tools(organization_id: str):
         - category: product category
         - price_min: minimum price
         - price_max: maximum price
+
+        Pagination:
+                - page starts at 1
+                - page_size controls the number of customers returned
+                - default page_size is 20
+                - maximum page_size is 20
 
         Use only the filters relevant to the user's request.
         """
@@ -72,12 +80,26 @@ def product_tools(organization_id: str):
             if price_max is not None:
                 query["price"]["$lte"] = price_max
 
-        return list(
-            db.products.find(
-                query,
-                {"_id": 0,"image": 0}
-            ).limit(100)
+        page = max(1, page)
+        page_size = min(max(1, page_size), 20)
+
+        skip = (page - 1) * page_size       
+
+        products = list(
+        db.products.find(
+            query,
+            {"_id": 0,"image": 0}
         )
+        .sort("createdAt", -1)
+        .skip(skip)
+        .limit(page_size)
+    )
+        return {
+            "page": page,
+            "page_size": page_size,
+            "products": products
+        }        
+
 
 
     @tool

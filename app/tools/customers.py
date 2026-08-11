@@ -19,6 +19,8 @@ def customer_tools(organization_id: str):
         address: str | None = None,
         created_at_from: str | None = None,
         created_at_to: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
     ):
         """
         Get information about customers.
@@ -41,6 +43,12 @@ def customer_tools(organization_id: str):
         - address: customer address
         - created_at_from: minimum creation date, ISO format
         - created_at_to: maximum creation date, ISO format
+
+         Pagination:
+        - page starts at 1
+        - page_size controls the number of customers returned
+        - default page_size is 20
+        - maximum page_size is 20
 
         Use only the filters relevant to the user's request.
         """
@@ -70,12 +78,25 @@ def customer_tools(organization_id: str):
             if created_at_to:
                 query["createdAt"]["$lte"] = parse_date(created_at_to)
 
-        return list(
-            db.customers.find(
-                query,
-                {"_id": 0}
-            ).limit(100)
+        page = max(1, page)
+        page_size = min(max(1, page_size), 20)
+
+        skip = (page - 1) * page_size       
+
+        customers = list(
+        db.customers.find(
+            query,
+            {"_id": 0}
         )
+        .sort("createdAt", -1)
+        .skip(skip)
+        .limit(page_size)
+    )
+        return {
+            "page": page,
+            "page_size": page_size,
+            "customers": customers
+        }
 
 
     @tool
