@@ -184,86 +184,86 @@ def order_tools(organization_id: str):
 
         return order
 
-    @tool
-    def analyze_orders(
-        group_by: str | None = None,
-        operation: str = "count",
-        sort: str = "desc",
-        limit: int = 10
-    ):
-        """
-        Analyze order data using database aggregation.
+    # @tool
+    # def analyze_orders(
+    #     group_by: str | None = None,
+    #     operation: str = "count",
+    #     sort: str = "desc",
+    #     limit: int = 10
+    # ):
+    #     """
+    #     Analyze order data using database aggregation.
 
-        group_by:
-        - customer
-        - product
-        - status
+    #     group_by:
+    #     - customer
+    #     - product
+    #     - status
 
-        operation:
-        - count
-        - sum_quantity
-        - sum_revenue
+    #     operation:
+    #     - count
+    #     - sum_quantity
+    #     - sum_revenue
 
-        Use this tool instead of get_orders when the user asks
-        for calculations, rankings, comparisons, trends, totals,
-        or summaries involving multiple orders.
+    #     Use this tool instead of get_orders when the user asks
+    #     for calculations, rankings, comparisons, trends, totals,
+    #     or summaries involving multiple orders.
 
-        Do NOT retrieve all orders with get_orders() for analytical
-        questions.
-        """
+    #     Do NOT retrieve all orders with get_orders() for analytical
+    #     questions.
+    #     """
 
-        match_stage = {
-            "$match": {
-                "organization": organization_id
-            }
-        }
+    #     match_stage = {
+    #         "$match": {
+    #             "organization": organization_id
+    #         }
+    #     }
 
-        if group_by == "customer":
-            group_field = "$customer"
+    #     if group_by == "customer":
+    #         group_field = "$customer"
 
-        elif group_by == "product":
-            group_field = "$products.product"
+    #     elif group_by == "product":
+    #         group_field = "$products.product"
 
-        elif group_by == "status":
-            group_field = "$status"
+    #     elif group_by == "status":
+    #         group_field = "$status"
 
-        else:
-            return {"error": "Invalid group_by"}
+    #     else:
+    #         return {"error": "Invalid group_by"}
 
-        if operation == "count":
-            group_stage = {
-                "$group": {
-                    "_id": group_field,
-                    "count": {"$sum": 1}
-                }
-            }
+    #     if operation == "count":
+    #         group_stage = {
+    #             "$group": {
+    #                 "_id": group_field,
+    #                 "count": {"$sum": 1}
+    #             }
+    #         }
 
-        elif operation == "sum_quantity":
-            group_stage = {
-                "$group": {
-                    "_id": group_field,
-                    "quantity": {
-                        "$sum": "$products.quantity"
-                    }
-                }
-            }
+    #     elif operation == "sum_quantity":
+    #         group_stage = {
+    #             "$group": {
+    #                 "_id": group_field,
+    #                 "quantity": {
+    #                     "$sum": "$products.quantity"
+    #                 }
+    #             }
+    #         }
 
-        else:
-            return {"error": "Unsupported operation"}
+    #     else:
+    #         return {"error": "Unsupported operation"}
 
-        pipeline = [
-            match_stage,
-            group_stage,
-            {
-                "$sort": {
-                    "count" if operation == "count" else "quantity": -1
-                }
-            },
-            {
-                "$limit": limit
-            }
-        ]
+    #     pipeline = [
+    #         match_stage,
+    #         group_stage,
+    #         {
+    #             "$sort": {
+    #                 "count" if operation == "count" else "quantity": -1
+    #             }
+    #         },
+    #         {
+    #             "$limit": limit
+    #         }
+    #     ]
 
-        return list(db.orders.aggregate(pipeline))
+    #     return list(db.orders.aggregate(pipeline))
 
-    return [get_orders, get_order, count_orders ,analyze_orders]
+    return [get_orders, get_order, count_orders]

@@ -20,7 +20,8 @@ def main():
                     "role": "user",
                     "content": message
                 }
-            ]
+            ],
+            "tool_calls": 0
         })
         # print("\n--- Messages ---")
         # for msg in result["messages"]:

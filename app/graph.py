@@ -9,6 +9,13 @@ from bson import ObjectId
 from app.tools.customers import customer_tools
 from app.tools.orders import order_tools
 from app.tools.products import product_tools
+from app.tools.analytics.customers_analysis import customer_analysis
+from app.tools.analytics.inventory_analysis import inventory_tools
+from app.tools.analytics.orders_analysis import order_analysis
+from app.tools.analytics.products_analysis import product_analysis
+from app.tools.analytics.sales_analysis import sales_tools
+from app.tools.analytics.overview_analytics import overview_tools
+MAX_TOOL_CALLS = 5
 
 llm = ChatGroq(
     model="openai/gpt-oss-20b",
@@ -18,7 +25,15 @@ llm = ChatGroq(
 
 organization_id = ObjectId("69d7d122f1b2c8ffe9d9c781")
 
-tools = [*product_tools(organization_id),*order_tools(organization_id),*customer_tools(organization_id)]
+tools = [*product_tools(organization_id),
+         *order_tools(organization_id),
+         *customer_tools(organization_id),
+         *customer_analysis(organization_id),
+         *inventory_tools(organization_id),
+         *order_analysis(organization_id),
+         *product_analysis(organization_id),
+         *sales_tools(organization_id),
+         *overview_tools(organization_id)]
 llm_with_tools = llm.bind_tools(tools)
 
 
@@ -47,11 +62,25 @@ def call_llm(state: AgentState):
 
         raise
 
+tool_node = ToolNode(tools)
+
+def call_tools(state: AgentState):
+    result = tool_node.invoke(state)
+
+    return {
+        "messages": result["messages"],
+        "tool_calls": state.get("tool_calls", 0) + 1
+    }
+
 
 def should_continue(state: AgentState):
+
+    if state.get("tool_calls", 0) >= MAX_TOOL_CALLS:
+        return "fallback"
+    
     last_message = state["messages"][-1]
 
-    if last_message.tool_calls:
+    if getattr(last_message, "tool_calls", None):
         return "tools"
 
     if not last_message.content:
@@ -74,7 +103,7 @@ def fallback_node(state):
 builder = StateGraph(AgentState)
 
 builder.add_node("llm", call_llm)
-builder.add_node("tools", ToolNode(tools))
+builder.add_node("tools", call_tools)
 builder.add_node("fallback", fallback_node)
 
 builder.add_edge(START, "llm")
