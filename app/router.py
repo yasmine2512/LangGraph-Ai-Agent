@@ -95,10 +95,6 @@ GENERAL:
 Questions that don't require business database tools.
 Also use for RAG/document knowledge when appropriate.
 
-IMPORTANT ROUTING RULES:
-
-Basic record retrieval → *_INFO
-Business metrics/behavior → *_ANALYSIS
 
 Examples:
 
@@ -135,25 +131,44 @@ Examples:
 "Which products are low in stock?"
 → [inventory]
 
-Select multiple routes only when the question genuinely requires
-multiple domains.
+IMPORTANT ROUTING RULE:
+The current user message may depend on previous messages.
+Use the recent conversation to resolve references such as:
+"them", "those", "these", "that customer",
+"that product", "those orders", "what about them",
+"how many of them", etc.
+Always determine what entity the user is referring to
+before selecting routes.
 
-Return only the route names.
+Example:
+User: "How many products do I have?"
+Assistant: "You have 23 products."
+User: "How many of them are pending?"
+"them" refers to PRODUCTS.
+→ use product-related routes, NOT order-related routes.
+
+IMPORTANT:
+- Do NOT select customer routes merely because the user asks for
+  "recommendations".
+- Select general for generic advice or recommendations.
+- You may select multiple routes when answering the question requires
+  information from multiple business domains.
+- Only select a business route when the user's question actually
+  requires data from that domain.
+- Return only the route names.
+
 """
 
 def create_router(llm: BaseChatModel):
     router_llm = llm.with_structured_output(RouteDecision)
 
-    def route_query(user_message: str) -> list[str]:
+    def route_query(messages) -> list[str]:
         result = router_llm.invoke([
             {
                 "role": "system",
                 "content": ROUTER_PROMPT
             },
-            {
-                "role": "user",
-                "content": user_message
-            }
+            *messages
         ])
 
         return result.routes

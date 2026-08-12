@@ -7,9 +7,9 @@ from app.state import AgentState,get_recent_messages
 from bson import ObjectId
 from app.database.DbConnection import client,MONGODB_DATABASE
 from langchain_core.messages import SystemMessage, RemoveMessage, trim_messages
-from router import create_router, build_route_tools
+from app.router import create_router, build_route_tools
 from app.summarizer import summarize_conversation,should_summarize
-from llm import llm
+from app.llm import llm
 
 MAX_TOOL_CALLS = 5
 
@@ -17,7 +17,6 @@ organization_id = ObjectId("69d7d122f1b2c8ffe9d9c781")
 router = create_router(llm)
 
 route_tools = build_route_tools(organization_id)
-# llm_with_tools = llm.bind_tools(route_tools)
 
 def get_tools_for_routes(routes):
     tools = []
@@ -32,20 +31,12 @@ def get_tools_for_routes(routes):
     return tools
 
 def router_node(state: AgentState):
-    messages = state["messages"]
 
-    user_message = next(
-        (
-            m.content
-            for m in reversed(messages)
-            if m.type == "human"
-        ),
-        ""
-    )
-
-    routes = router(user_message)
-
-    print("ROUTES:", routes)
+    context = get_recent_messages(
+    state["messages"],
+    max_human_turns=3
+)
+    routes = router(context)
     return {
         "routes": routes
     }
@@ -65,16 +56,13 @@ def call_llm(state: AgentState):
         max_human_turns=3
     )
 
-    print("ROUTES:", routes)
-    print("TOOLS:", [tool.name for tool in tools])
-    print("CONTEXT:", context)
-
     try:
         response = model.invoke(context)
 
         return {
             "messages": [response]
         }
+    
     except RateLimitError as e:
         print("Groq rate limit reached:", e)
 

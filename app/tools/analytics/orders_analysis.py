@@ -15,89 +15,32 @@ def order_analysis(organization_id: str):
         product_id: str | None = None
     ):
         """
-        Analyze order activity and order statistics.
+        Analyze order activity and statistics.
 
-        USE THIS TOOL when the user asks about orders themselves:
-        order counts, order statuses, order trends, orders from a customer,
-        orders containing a product, or average order value.
+        Use for:
+        - order counts and status breakdowns
+        - order trends over time
+        - orders grouped by customer or product
+        - average order value
+        - statistics for a specific customer or product
 
-        Do NOT use this tool for general revenue or sales-performance
-        questions such as total sales revenue, revenue trends, sales by
-        category, or product revenue. Use analyze_sales for those.
+        Use count_orders for simple "how many orders" queries when no
+        analysis or grouping is needed.
 
-        Do NOT use get_orders() to retrieve many orders when the user
-        is asking for a count, total, ranking, comparison, trend,
-        or other calculation. Use this analytical tool instead.
+        Do not use for:
+        - revenue or sales performance → analyze_sales
+        - customer spending/rankings → analyze_customers
+        - retrieving individual orders → get_orders
 
-        period specifies the time period:
-        - today
-        - this_week
-        - this_month
-        - last_month
-        - this_year
-        - last_year
-        - all_time
-        - None = all available data
+        Arguments:
+        - period: today, this_week, this_month, last_month, this_year,
+        last_year, all_time, or None
+        - status: filter by order status
+        - group_by: status, customer, product, day, month, or None
+        - customer_id: analyze orders for a specific customer
+        - product_id: analyze orders containing a specific product
 
-        status filters orders by their status.
-        Use when the user specifically mentions a status such as:
-        - pending
-        - completed
-        - canceled
-
-        group_by determines how orders should be grouped:
-
-        - status:
-            Count or summarize orders by their status.
-            Use for:
-            "Give me my order status breakdown."
-            "How many orders are pending, completed, and canceled?"
-
-        - customer:
-            Group orders by customer.
-            Use for:
-            "How many orders did each customer make?"
-            "Which customers have the most orders?"
-
-        - product:
-            Group orders by product.
-            Use for:
-            "How many orders contained each product?"
-
-        - day:
-            Group orders by day.
-            Use for:
-            "How many orders did I receive each day this week?"
-
-        - month:
-            Group orders by month.
-            Use for:
-            "Show my order trend by month."
-
-        - None:
-            Return an overall order statistic rather than a grouped result.
-
-        customer_id:
-            Use when the user asks about orders belonging to one
-            specific customer whose ID is already known.
-
-        product_id:
-            Use when the user asks about orders containing one
-            specific product whose ID is already known.
-
-        average order value:
-            Use this tool when the user asks for the average value
-            of an order. Calculate this from completed orders unless
-            the user explicitly specifies another status.
-
-        IMPORTANT:
-        If the user asks "Who is my biggest customer?" or
-        "Who spent the most?", this is a CUSTOMER analysis and
-        analyze_customers should be used instead.
-
-        If the user asks "What is my total revenue?" or
-        "How is my revenue trending?", this is a SALES analysis and
-        analyze_sales should be used instead.
+        Average order value is calculated from completed orders by default.
         """
 
         query = {

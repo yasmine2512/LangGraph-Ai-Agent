@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from langchain_core.messages import SystemMessage, RemoveMessage
 import tiktoken
-from llm import llm
+from app.llm import llm
 from app.state import AgentState,get_recent_messages
 
 MAX_LLM_TOKENS = 5000

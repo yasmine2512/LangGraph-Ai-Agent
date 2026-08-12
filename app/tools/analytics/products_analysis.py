@@ -129,13 +129,12 @@ def product_analysis(organization_id):
             ])
 
             results = list(db.orders.aggregate(pipeline))
-            output = json.dumps({
-                        "results": results,
-                        "count": len(results)
-                    }, default=str)
-            
-            print(type(output))
-            return output
+            if not results:
+                return {
+                    "results": [],
+                    "message": "No matching results were found."
+                }
+            return results
 
         # Product ranking
         pipeline.extend([
@@ -195,15 +194,12 @@ def product_analysis(organization_id):
         ])
 
         results = list(db.orders.aggregate(pipeline))
-
-        output = json.dumps({
-            "results": results,
-            "count": len(results)
-        }, default=str)
-
-        print(type(output))
-        return output
-
+        if not results:
+            return {
+                "results": [],
+                "message": "No matching results were found."
+            }
+        return results
 
 
     return [analyze_products]

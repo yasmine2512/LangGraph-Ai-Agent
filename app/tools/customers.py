@@ -2,14 +2,7 @@ from langchain_core.tools import tool
 from app.database.DbConnection import db
 from bson import ObjectId
 from datetime import datetime, timezone
-
-def parse_date(date_string):
-    if not date_string:
-        return None
-
-    return datetime.fromisoformat(
-        date_string.replace("Z", "+00:00")
-    )
+from app.utils.dates import parse_date
 
 def customer_tools(organization_id: str):
     
@@ -23,33 +16,20 @@ def customer_tools(organization_id: str):
         page_size: int = 10,
     ):
         """
-        Retrieve a SMALL paginated list of customers.
+        Retrieve a small paginated list of customers.
+        Use for customer search/listing by:
+        name, address, or creation date.
 
-        Use this tool when you need to:
-        - search for customers
-        - retrieve multiple customers
-        - filter customers by name, address, or creation date
-        - find customer information when you do not already have a specific
-        customer ID
+        Use get_customer when a specific customer ID is known.
+        Use count_customers for "how many customers" questions.
+        Use analyze_customers for spending, rankings, activity,
+        repeat customers, or other customer analytics.
 
-        If you already have a specific customer ID and only need that
-        customer's information, use get_customer instead.
+        Filters:
+        name, address, created_at_from, created_at_to.
 
-        Do NOT use this tool to determine which customer has the most orders,
-        highest revenue, or other order-based metrics. Use analyze_orders instead.
-
-        Optional filters:
-        - name: customer name
-        - address: customer address
-        - created_at_from: minimum creation date, ISO format
-        - created_at_to: maximum creation date, ISO format
-
-         Pagination:
-        - page starts at 1
-        - page_size controls the number of customers returned
-        - default page_size is 10
-        - maximum page_size is 10
-
+        Pagination:
+        page (default 1), page_size (default 10, max 10).
         Use only the filters relevant to the user's request.
         """
 
@@ -122,5 +102,41 @@ def customer_tools(organization_id: str):
             }
 
         return customer
+
+    @tool
+    def count_customers(
+        created_at_from: str | None = None,
+        created_at_to: str | None = None,
+    ):
+        """
+        Count customers belonging to the organization.
+
+        Use this tool whenever the user asks HOW MANY customers exist
+        or match a date-based filter.
+
+        Optional filters:
+        - created_at_from: minimum customer creation date, ISO format
+        - created_at_to: maximum customer creation date, ISO format
+
+        Use only the filters relevant to the user's request.
+
+        """
+
+        query = {
+            "organization": organization_id
+        }
+
+        if created_at_from or created_at_to:
+            query["createdAt"] = {}
+
+            if created_at_from:
+                query["createdAt"]["$gte"] = parse_date(created_at_from)
+
+            if created_at_to:
+                query["createdAt"]["$lte"] = parse_date(created_at_to)
+
+        return {
+            "count": db.customers.count_documents(query)
+        }
     
-    return [get_customers, get_customer]
+    return [get_customers, get_customer, count_customers]

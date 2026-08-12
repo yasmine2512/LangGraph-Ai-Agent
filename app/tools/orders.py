@@ -2,15 +2,7 @@ from langchain_core.tools import tool
 from app.database.DbConnection import db
 from bson import ObjectId
 from datetime import datetime, timezone
-
-def parse_date(date_string):
-    if not date_string:
-        return None
-
-    return datetime.fromisoformat(
-        date_string.replace("Z", "+00:00")
-    )
-
+from app.utils.dates import parse_date
 
 def order_tools(organization_id: str):
 
@@ -27,39 +19,24 @@ def order_tools(organization_id: str):
         page_size: int = 10,
     ):
         """
-        Retrieve a SMALL paginated list of individual orders.
+        Retrieve a small paginated list of orders.
 
-        Use this tool when the user wants:
-        - specific orders
-        - orders belonging to a customer
-        - orders with a particular status
-        - order details
+        Use for searching/listing specific orders or filtering orders by:
+        customer, status, product, or date.
 
-        DO NOT use this tool for:
-        - counting orders
-        - calculating revenue
-        - calculating averages
-        - aggregations
-        - statistics
-        - trends
-        - comparing large groups of orders
+        Use get_order when a specific order ID is known.
+        Use count_orders for "how many orders" questions.
+        Use analyze_orders for order statistics, averages, trends,
+        comparisons, or other order analytics.
 
-        For those requests, use the appropriate analysis/count tool instead.
-
-        Optional filters:
-        - created_at_from: minimum order creation date, ISO format
-        - created_at_to: maximum order creation date, ISO format
-        - status: order status such as pending, completed, shipped, cancelled
-        - customer_id: filter by customer ID
-        - completed_at_from: minimum completion date, ISO format
-        - completed_at_to: maximum completion date, ISO format
-        - product_id: filter orders containing this product
+        Filters:
+        created_at_from, created_at_to,
+        status, customer_id,
+        completed_at_from, completed_at_to,
+        product_id.
 
         Pagination:
-                - page starts at 1
-                - page_size controls the number of customers returned
-                - default page_size is 10
-                - maximum page_size is 10
+        page (default 1), page_size (default 10, max 10).
 
         Use only the filters relevant to the user's request.
         """
@@ -215,87 +192,5 @@ def order_tools(organization_id: str):
             }
 
         return order
-
-    # @tool
-    # def analyze_orders(
-    #     group_by: str | None = None,
-    #     operation: str = "count",
-    #     sort: str = "desc",
-    #     limit: int = 10
-    # ):
-    #     """
-    #     Analyze order data using database aggregation.
-
-    #     group_by:
-    #     - customer
-    #     - product
-    #     - status
-
-    #     operation:
-    #     - count
-    #     - sum_quantity
-    #     - sum_revenue
-
-    #     Use this tool instead of get_orders when the user asks
-    #     for calculations, rankings, comparisons, trends, totals,
-    #     or summaries involving multiple orders.
-
-    #     Do NOT retrieve all orders with get_orders() for analytical
-    #     questions.
-    #     """
-
-    #     match_stage = {
-    #         "$match": {
-    #             "organization": organization_id
-    #         }
-    #     }
-
-    #     if group_by == "customer":
-    #         group_field = "$customer"
-
-    #     elif group_by == "product":
-    #         group_field = "$products.product"
-
-    #     elif group_by == "status":
-    #         group_field = "$status"
-
-    #     else:
-    #         return {"error": "Invalid group_by"}
-
-    #     if operation == "count":
-    #         group_stage = {
-    #             "$group": {
-    #                 "_id": group_field,
-    #                 "count": {"$sum": 1}
-    #             }
-    #         }
-
-    #     elif operation == "sum_quantity":
-    #         group_stage = {
-    #             "$group": {
-    #                 "_id": group_field,
-    #                 "quantity": {
-    #                     "$sum": "$products.quantity"
-    #                 }
-    #             }
-    #         }
-
-    #     else:
-    #         return {"error": "Unsupported operation"}
-
-    #     pipeline = [
-    #         match_stage,
-    #         group_stage,
-    #         {
-    #             "$sort": {
-    #                 "count" if operation == "count" else "quantity": -1
-    #             }
-    #         },
-    #         {
-    #             "$limit": limit
-    #         }
-    #     ]
-
-    #     return list(db.orders.aggregate(pipeline))
 
     return [get_orders, get_order, count_orders]

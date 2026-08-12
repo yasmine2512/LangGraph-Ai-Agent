@@ -16,79 +16,32 @@ def inventory_tools(organization_id):
         """
         Analyze current product inventory and stock levels.
 
-        USE THIS TOOL for questions about inventory, available stock,
-        low-stock products, out-of-stock products, inventory value,
-        or products that may need restocking.
+        Use for:
+        - current stock levels
+        - low-stock or out-of-stock products
+        - inventory value
+        - restock alerts
+        - stock by category
 
-        Do NOT use this tool for product sales, revenue, or best-selling
-        product questions. Use analyze_products for those.
+        Do not use for product sales, revenue, or best-selling products
+        → analyze_products.
 
-        analysis determines what inventory analysis to perform:
+        analysis:
+        - stock_levels: current stock quantities
+        - low_stock: products below the stock threshold
+        - out_of_stock: products with zero stock
+        - inventory_value: total stock × product price
+        - restock_alerts: products needing restocking
+        - stock_by_category: stock grouped by category
 
-        - stock_levels:
-            Return current stock quantities for products.
-            Use for:
-            "How much stock do I have?"
-            "What are my current stock levels?"
-            "Show me the stock for my products."
+        Arguments:
+        - category: filter by product category
+        - product_id: inventory for a specific product ID
+        - stock_threshold: threshold for low_stock/restock_alerts
+        - limit: maximum products returned
 
-        - low_stock:
-            Find products whose stock is below or equal to the
-            specified stock_threshold.
-            Use for:
-            "Which products are low in stock?"
-            "What products have less than 10 units?"
-
-        - out_of_stock:
-            Find products whose stock quantity is exactly zero.
-            Use for:
-            "Which products are out of stock?"
-            "Do I have any products with no stock?"
-
-        - inventory_value:
-            Calculate the current value of inventory using:
-            stock quantity × product price.
-            Use for:
-            "How much is my inventory worth?"
-            "What is the total value of my stock?"
-
-        - total_products:
-            Count the total number of products in the inventory.
-            Use for:
-            "How many products do I have?"
-            "How many products are in my inventory?"
-
-        - restock_alerts:
-            Identify products that need attention because their stock
-            is low or zero.
-            Use for:
-            "What products should I restock?"
-            "What are my restock alerts?"
-
-        - stock_by_category:
-            Analyze or summarize stock levels grouped by product category.
-            Use for:
-            "How much stock do I have in each category?"
-            "Which category has the most stock?"
-
-        category:
-            Use when the user asks about inventory for a specific
-            product category.
-
-        product_id:
-            Use only when the user asks about inventory for one
-            specific product whose ID is already known.
-
-        stock_threshold:
-            Use with low_stock or restock_alerts when the user gives
-            a specific threshold.
-            Example: "Show products with fewer than 5 units."
-            If the user does not specify a threshold, use the tool's
-            default threshold.
-
-        limit:
-            Use when returning a list of products.
-            Keep the value small unless the user explicitly asks for more.
+        Use the default threshold when none is specified.
+        Keep limit small unless the user requests more.
         """
 
         if limit is None:
@@ -114,7 +67,6 @@ def inventory_tools(organization_id):
         if analysis in [
             "stock_levels",
             "inventory_value",
-            "total_products"
         ]:
 
             result = list(db.products.aggregate([
@@ -211,7 +163,7 @@ def inventory_tools(organization_id):
         # Stock by category
         if analysis == "stock_by_category":
 
-            return list(db.products.aggregate([
+            result = list(db.products.aggregate([
                 {"$match": query},
                 {
                     "$group": {
@@ -239,9 +191,15 @@ def inventory_tools(organization_id):
                     }
                 }
             ]))
+            if not result:
+                return {
+                    "results": [],
+                    "message": "No matching results were found."
+                }
+            return result
 
         # Individual products
-        return list(
+        result = list(
             db.products.find(
                 query,
                 {
@@ -254,5 +212,11 @@ def inventory_tools(organization_id):
                 }
             ).limit(limit)
         )
+        if not result:
+            return {
+                "results": [],
+                "message": "No matching results were found."
+            }
+        return result
 
     return [analyze_inventory]

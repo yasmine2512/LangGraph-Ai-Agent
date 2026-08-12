@@ -13,86 +13,33 @@ def customer_analysis(organization_id: str):
         limit: int | None = None
     ):
         """
-         Analyze customer behavior and customer performance.
+        Analyze customer behavior and performance.
 
-        USE THIS TOOL when the user asks about customers as a group,
-        customer rankings, customer activity, repeat customers,
-        new customers, customer spending, or customer lifetime value.
+        Use for customer rankings, spending, order activity, repeat/new
+        customers, customer value, and customer statistics.
 
-        Do NOT use this tool to retrieve basic customer information such as
-        name, email, phone, or address. Use get_customer/get_customers for that.
+        Use get_customers/get_customer for basic customer information.
+        Use count_customers for simple customer counts.
 
-        analysis determines what customer analysis to perform:
+        analysis:
+        - top_customers: rank customers by overall value/performance
+        - most_orders: customers with the most orders
+        - highest_spending: customers with the highest completed-order spending
+        - new_customers: customers created during a period
+        - repeat_customers: customers with multiple orders
+        - active_customers: customers who ordered during a period
+        - average_clv: average customer lifetime value
+        - spending_distribution: customers grouped by spending ranges
 
-        - top_customers:
-            Find customers ranked by overall customer value or performance.
-            Use for questions like:
-            "Who are my top customers?"
-            "Which customers are the most valuable?"
+        period:
+        today, this_week, this_month, last_month, this_year,
+        last_year, all_time
 
-        - most_orders:
-            Find customers with the highest number of orders.
-            Use for:
-            "Who orders the most?"
-            "Which customer has placed the most orders?"
-            "Who are my most frequent customers?"
+        Arguments:
+        - customer_id: analyze one specific customer ID
+        - limit: maximum customers returned in rankings/lists
 
-        - highest_spending:
-            Find customers who spent the most money on completed orders.
-            Use for:
-            "Who spent the most?"
-            "Which customers generated the most revenue?"
-            "Who are my biggest spenders?"
-
-        - new_customers:
-            Count or identify customers created during a specified period.
-            Use for:
-            "How many new customers did I get this month?"
-            "How many customers joined last month?"
-
-        - repeat_customers:
-            Find customers who have placed more than one order.
-            Use for:
-            "Do I have repeat customers?"
-            "How many returning customers do I have?"
-            "Which customers ordered more than once?"
-
-        - active_customers:
-            Find customers who placed orders during the specified period.
-            Use for:
-            "How many active customers do I have this month?"
-            "How many customers bought something this week?"
-
-        - average_clv:
-            Calculate the average customer lifetime value based on
-            completed-order spending.
-            Use for:
-            "What is my average customer lifetime value?"
-            "What is the average amount customers spend?"
-
-        - spending_distribution:
-            Group customers into spending ranges based on completed orders.
-            Use for:
-            "How are my customers distributed by spending?"
-            "How many customers spent under 100?"
-            "How many customers spent more than 1000?"
-
-        period specifies the time period when relevant:
-        - today
-        - this_week
-        - this_month
-        - last_month
-        - this_year
-        - last_year
-        - all_time
-        
-        customer_id:
-            Use only when the user is asking for analysis about one
-            specific customer whose ID is already known.
-
-        limit:
-            Use when returning a ranking or list of customers.
-            Keep the value small unless the user explicitly requests more.
+        Keep limit small unless the user requests more.
         """
 
         if limit is None:
@@ -278,7 +225,13 @@ def customer_analysis(organization_id: str):
                 }
             ])
 
-            return list(db.orders.aggregate(pipeline))
+            result = list(db.orders.aggregate(pipeline))
+            if not result:
+                return {
+                "results": [],
+                "message": "No matching results were found."
+                }
+            return result
 
         # Average CLV
         if analysis == "average_clv":

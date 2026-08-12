@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from app.database.DbConnection import db
 from bson import ObjectId
+from app.utils.dates import parse_date
 
 def product_tools(organization_id: str):
 
@@ -17,42 +18,30 @@ def product_tools(organization_id: str):
         page_size: int = 10,
     ):
         """
-        Retrieve a SMALL paginated list of individual products.
+        Retrieve a small paginated list of products.
 
-        Use this tool when you need to:
-        - search for products
-        - retrieve multiple products
-        - filter products by name, SKU, category, price, or stock
-        - find products when you do not already have a specific product ID
+        Use when the user wants to:
+        - search or list products
+        - find products by name, SKU, category, price, or stock
+        - retrieve multiple products without a specific product ID
 
-        If you already have a specific product ID and only need that
-        product's information, use get_product instead.
+        If a specific product ID is known, use get_product instead.
 
-         Do NOT use this tool for:
-        - counting products
-        - inventory statistics
-        - sales analysis
-        - revenue analysis
-        - averages
-        - trends
-        - aggregations
+        Do NOT use for:
+        - counting products → count_products
+        - inventory analysis → analyze_inventory
+        - sales/revenue analysis → analyze_products
 
-        Use dedicated analysis/count tools for those requests.
-
-        Optional filters:
+        Filters:
         - name: product name
         - sku: product SKU
-        - stock_min: minimum stock
-        - stock_max: maximum stock
+        - stock_min / stock_max: stock range
         - category: product category
-        - price_min: minimum price
-        - price_max: maximum price
+        - price_min / price_max: price range
 
         Pagination:
-                - page starts at 1
-                - page_size controls the number of customers returned
-                - default page_size is 10
-                - maximum page_size is 10
+        - page: starts at 1
+        - page_size: 1–10, default 10
 
         Use only the filters relevant to the user's request.
         """
@@ -147,4 +136,57 @@ def product_tools(organization_id: str):
 
         return product
 
-    return [get_products, get_product]
+    @tool
+    def count_products(
+        created_at_from: str | None = None,
+        created_at_to: str | None = None,
+        category: str | None = None,
+        stock_min: int | None = None,
+        stock_max: int | None = None,
+    ):
+        """
+        Count products belonging to the organization.
+
+        Use this tool whenever the user asks HOW MANY products exist
+        or match specific product filters.
+
+        Optional filters:
+        - created_at_from: minimum product creation date, ISO format
+        - created_at_to: maximum product creation date, ISO format
+        - category: filter by product category
+        - stock_min: minimum stock quantity
+        - stock_max: maximum stock quantity
+
+        Use only the filters relevant to the user's request.
+        """
+
+        query = {
+            "organization": organization_id
+        }
+
+        if created_at_from or created_at_to:
+            query["createdAt"] = {}
+
+            if created_at_from:
+                query["createdAt"]["$gte"] = parse_date(created_at_from)
+
+            if created_at_to:
+                query["createdAt"]["$lte"] = parse_date(created_at_to)
+
+        if category:
+            query["category"] = category
+
+        if stock_min is not None or stock_max is not None:
+            query["stock"] = {}
+
+            if stock_min is not None:
+                query["stock"]["$gte"] = stock_min
+
+            if stock_max is not None:
+                query["stock"]["$lte"] = stock_max
+
+        return {
+            "count": db.products.count_documents(query)
+        }
+
+    return [get_products, get_product, count_products]
