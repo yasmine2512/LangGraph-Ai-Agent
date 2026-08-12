@@ -8,11 +8,11 @@ def sales_tools(organization_id: str):
 
     @tool
     def analyze_sales(
-    period: str = None,
-    group_by: str = None,
-    customer_id: str = None,
-    product_id: str = None,
-    category: str = None
+    period: str | None = None,
+    group_by: str | None = None,
+    customer_id: str | None = None,
+    product_id: str | None = None,
+    category: str | None = None
     ):
         """
         Analyze completed sales and revenue.

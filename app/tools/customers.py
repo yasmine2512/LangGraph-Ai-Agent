@@ -20,10 +20,10 @@ def customer_tools(organization_id: str):
         created_at_from: str | None = None,
         created_at_to: str | None = None,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = 10,
     ):
         """
-        Get information about customers.
+        Retrieve a SMALL paginated list of customers.
 
         Use this tool when you need to:
         - search for customers
@@ -47,8 +47,8 @@ def customer_tools(organization_id: str):
          Pagination:
         - page starts at 1
         - page_size controls the number of customers returned
-        - default page_size is 20
-        - maximum page_size is 20
+        - default page_size is 10
+        - maximum page_size is 10
 
         Use only the filters relevant to the user's request.
         """
@@ -79,7 +79,7 @@ def customer_tools(organization_id: str):
                 query["createdAt"]["$lte"] = parse_date(created_at_to)
 
         page = max(1, page)
-        page_size = min(max(1, page_size), 20)
+        page_size = min(max(1, page_size), 10)
 
         skip = (page - 1) * page_size       
 

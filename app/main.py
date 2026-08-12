@@ -1,18 +1,26 @@
 from app.graph import graph
 from app.database.DbConnection import test_connection
 
-
 def main():
+    thread_id = 0
     test_connection()
     print("AI Agent started!")
     print("Type 'exit' to quit.\n")
 
     while True:
-        message = input("You: ")
 
+        config = {
+        "configurable": {
+            "thread_id": thread_id
+        }
+        }
+
+        message = input("You: ")
+        
         if message.lower() == "exit":
             print("Goodbye!")
             break
+                
 
         result = graph.invoke({
             "messages": [
@@ -22,16 +30,17 @@ def main():
                 }
             ],
             "tool_calls": 0
-        })
-        # print("\n--- Messages ---")
-        # for msg in result["messages"]:
-        #     print("\nTYPE:", type(msg).__name__)
-        #     print("CONTENT:", msg.content)
+        },config)
+    
+        print("\n--- Messages ---")
+        for msg in result["messages"]:
+            print("\nTYPE:", type(msg).__name__)
+            print("CONTENT:", msg.content)
 
-        #     if hasattr(msg, "tool_calls"):
-        #         print("TOOL CALLS:", msg.tool_calls)
+            if hasattr(msg, "tool_calls"):
+                print("TOOL CALLS:", msg.tool_calls)
 
-        # print("\n--- Final answer ---")
+        print("\n--- Final answer ---")
         print(result["messages"][-1].content)
         print()
 

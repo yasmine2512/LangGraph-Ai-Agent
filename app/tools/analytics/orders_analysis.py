@@ -8,11 +8,11 @@ def order_analysis(organization_id: str):
 
     @tool
     def analyze_orders(
-        period: str = None,
-        status: str = None,
-        group_by: str = None,
-        customer_id: str = None,
-        product_id: str = None
+        period: str | None = None,
+        status: str | None = None,
+        group_by: str | None = None,
+        customer_id: str | None = None,
+        product_id: str | None = None
     ):
         """
         Analyze order activity and order statistics.

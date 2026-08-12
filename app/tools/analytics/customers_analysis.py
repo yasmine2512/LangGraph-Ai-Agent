@@ -7,10 +7,10 @@ def customer_analysis(organization_id: str):
 
     @tool
     def analyze_customers(
-        period: str = None,
-        analysis: str = None,
-        customer_id: str = None,
-        limit: int = None
+        period: str | None = None,
+        analysis: str | None = None,
+        customer_id: str | None = None,
+        limit: int | None = None
     ):
         """
          Analyze customer behavior and customer performance.

@@ -7,11 +7,11 @@ def product_analysis(organization_id):
 
     @tool
     def analyze_products(
-        period: str = None,
-        analysis: str = None,
-        product_id: str = None,
-        category: str = None,
-        limit: int = None
+        period: str | None = None,
+        analysis: str | None = None,
+        product_id: str | None = None,
+        category: str | None = None,
+        limit: int | None = None
     ):
         """
         Analyze product sales performance and product revenue.

@@ -14,10 +14,10 @@ def product_tools(organization_id: str):
         price_min: float | None = None,
         price_max: float | None = None,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = 10,
     ):
         """
-        Get information about multiple products.
+        Retrieve a SMALL paginated list of individual products.
 
         Use this tool when you need to:
         - search for products
@@ -27,6 +27,17 @@ def product_tools(organization_id: str):
 
         If you already have a specific product ID and only need that
         product's information, use get_product instead.
+
+         Do NOT use this tool for:
+        - counting products
+        - inventory statistics
+        - sales analysis
+        - revenue analysis
+        - averages
+        - trends
+        - aggregations
+
+        Use dedicated analysis/count tools for those requests.
 
         Optional filters:
         - name: product name
@@ -40,8 +51,8 @@ def product_tools(organization_id: str):
         Pagination:
                 - page starts at 1
                 - page_size controls the number of customers returned
-                - default page_size is 20
-                - maximum page_size is 20
+                - default page_size is 10
+                - maximum page_size is 10
 
         Use only the filters relevant to the user's request.
         """
@@ -81,7 +92,7 @@ def product_tools(organization_id: str):
                 query["price"]["$lte"] = price_max
 
         page = max(1, page)
-        page_size = min(max(1, page_size), 20)
+        page_size = min(max(1, page_size), 10)
 
         skip = (page - 1) * page_size       
 

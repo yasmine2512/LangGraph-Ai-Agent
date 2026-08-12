@@ -24,10 +24,10 @@ def order_tools(organization_id: str):
         completed_at_to: str | None = None,
         product_id: str | None = None,
         page: int = 1,
-        page_size: int = 20,
+        page_size: int = 10,
     ):
         """
-        Retrieve ORDER information.
+        Retrieve a SMALL paginated list of individual orders.
 
         Use this tool when the user wants:
         - specific orders
@@ -35,7 +35,16 @@ def order_tools(organization_id: str):
         - orders with a particular status
         - order details
 
-        DO NOT use this tool to retrieve customer or product information.
+        DO NOT use this tool for:
+        - counting orders
+        - calculating revenue
+        - calculating averages
+        - aggregations
+        - statistics
+        - trends
+        - comparing large groups of orders
+
+        For those requests, use the appropriate analysis/count tool instead.
 
         Optional filters:
         - created_at_from: minimum order creation date, ISO format
@@ -49,8 +58,8 @@ def order_tools(organization_id: str):
         Pagination:
                 - page starts at 1
                 - page_size controls the number of customers returned
-                - default page_size is 20
-                - maximum page_size is 20
+                - default page_size is 10
+                - maximum page_size is 10
 
         Use only the filters relevant to the user's request.
         """
@@ -91,7 +100,7 @@ def order_tools(organization_id: str):
             }
 
         page = max(1, page)
-        page_size = min(max(1, page_size), 20)
+        page_size = min(max(1, page_size), 10)
         
         skip = (page - 1) * page_size       
 
@@ -122,7 +131,8 @@ def order_tools(organization_id: str):
         product_id: str | None = None,
     ):
         """
-        Count orders belonging to the current organization.
+        Count orders. Use this tool whenever the user asks HOW MANY
+        orders exist or match specific filters.
 
         Use this when the user asks how many orders match certain criteria.
 

@@ -7,11 +7,11 @@ def inventory_tools(organization_id):
 
     @tool
     def analyze_inventory(
-        analysis: str = None,
-        category: str = None,
-        product_id: str = None,
-        stock_threshold: int = None,
-        limit: int = None
+        analysis: str | None = None,
+        category: str | None = None,
+        product_id: str | None = None,
+        stock_threshold: int | None = None,
+        limit: int | None = None
     ):
         """
         Analyze current product inventory and stock levels.
