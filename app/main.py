@@ -34,13 +34,14 @@ def main():
     
         print("\n--- Messages ---")
         for msg in result["messages"]:
-            print("\nTYPE:", type(msg).__name__)
-            print("CONTENT:", msg.content)
+            # print("\nTYPE:", type(msg).__name__)
+            # print("CONTENT:", msg.content)
 
             if hasattr(msg, "tool_calls"):
                 print("TOOL CALLS:", msg.tool_calls)
 
         print("\n--- Final answer ---")
+
         print(result["messages"][-1].content)
         print()
 

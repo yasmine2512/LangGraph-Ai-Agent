@@ -85,8 +85,7 @@ def customer_analysis(organization_id: str):
         - this_year
         - last_year
         - all_time
-        - None = all available data
-
+        
         customer_id:
             Use only when the user is asking for analysis about one
             specific customer whose ID is already known.

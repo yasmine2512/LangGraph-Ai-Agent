@@ -1,77 +1,76 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import AIMessage
-from langchain_groq import ChatGroq
-from groq import APIStatusError,RateLimitError
+from groq import APIStatusError,RateLimitError,BadRequestError
 from langgraph.checkpoint.mongodb import MongoDBSaver
-from app.state import AgentState
+from app.state import AgentState,get_recent_messages
 from bson import ObjectId
 from app.database.DbConnection import client,MONGODB_DATABASE
 from langchain_core.messages import SystemMessage, RemoveMessage, trim_messages
-import tiktoken
-from app.tools.customers import customer_tools
-from app.tools.orders import order_tools
-from app.tools.products import product_tools
-from app.tools.analytics.customers_analysis import customer_analysis
-from app.tools.analytics.inventory_analysis import inventory_tools
-from app.tools.analytics.orders_analysis import order_analysis
-from app.tools.analytics.products_analysis import product_analysis
-from app.tools.analytics.sales_analysis import sales_tools
-from app.tools.analytics.overview_analytics import overview_tools
+from router import create_router, build_route_tools
+from app.summarizer import summarize_conversation,should_summarize
+from llm import llm
+
 MAX_TOOL_CALLS = 5
-# RECENT_MESSAGES_TO_KEEP = 3
-MAX_LLM_TOKENS = 1500
-
-enc = tiktoken.encoding_for_model("gpt-4o")
-
-def get_total_tokens(messages) -> int:
-    total = 0
-    for m in messages:
-        content_str = str(m.content) if hasattr(m, "content") else str(m)
-        total += len(enc.encode(content_str)) + 20 # Buffer for metadata/role overhead
-    return total
-
-llm = ChatGroq(
-    model="openai/gpt-oss-20b",
-    temperature=0,
-    max_tokens=300,
-    max_retries=0,
-)
-
-trimmer = trim_messages(
-    max_tokens=MAX_LLM_TOKENS,
-    strategy="last",
-    token_counter=get_total_tokens,
-    include_system=True,
-    allow_partial=False,
-)
 
 organization_id = ObjectId("69d7d122f1b2c8ffe9d9c781")
+router = create_router(llm)
 
-tools = [*product_tools(organization_id),
-         *order_tools(organization_id),
-         *customer_tools(organization_id),
-         *customer_analysis(organization_id),
-         *inventory_tools(organization_id),
-         *order_analysis(organization_id),
-         *product_analysis(organization_id),
-         *sales_tools(organization_id),
-         *overview_tools(organization_id)]
-llm_with_tools = llm.bind_tools(tools)
+route_tools = build_route_tools(organization_id)
+# llm_with_tools = llm.bind_tools(route_tools)
 
+def get_tools_for_routes(routes):
+    tools = []
+    seen = set()
+
+    for route in routes:
+        for tool in route_tools.get(route, []):
+            if tool.name not in seen:
+                tools.append(tool)
+                seen.add(tool.name)
+
+    return tools
+
+def router_node(state: AgentState):
+    messages = state["messages"]
+
+    user_message = next(
+        (
+            m.content
+            for m in reversed(messages)
+            if m.type == "human"
+        ),
+        ""
+    )
+
+    routes = router(user_message)
+
+    print("ROUTES:", routes)
+    return {
+        "routes": routes
+    }
 
 def call_llm(state: AgentState):
-    try:
-        context = trim_messages(
+    routes = state.get("routes", [])
+
+    tools = get_tools_for_routes(routes)
+
+    if tools:
+        model = llm.bind_tools(tools)
+    else:
+        model = llm
+
+    context = get_recent_messages(
         state["messages"],
-        max_tokens=MAX_LLM_TOKENS,
-        strategy="last",
-        token_counter=get_total_tokens,
-        include_system=True,
-        allow_partial=False,
-        )
-        print(get_total_tokens(context))
-        response = llm_with_tools.invoke(context)
+        max_human_turns=3
+    )
+
+    print("ROUTES:", routes)
+    print("TOOLS:", [tool.name for tool in tools])
+    print("CONTEXT:", context)
+
+    try:
+        response = model.invoke(context)
 
         return {
             "messages": [response]
@@ -89,6 +88,22 @@ def call_llm(state: AgentState):
                 )
             ]
         }
+    except BadRequestError as e:
+    
+        print("LLM BadRequestError:", e)
+
+        return {
+            "messages": [
+                AIMessage(
+                    content=(
+                        "Sorry, I couldn't process that request because "
+                        "the conversation context became invalid. "
+                        "Please try the request again."
+                    )
+                )
+            ]
+        }
+    
     except APIStatusError as e:
 
         if e.status_code == 413 or "too large" in str(e).lower():
@@ -103,12 +118,51 @@ def call_llm(state: AgentState):
                     )
                 ]
             }
+        return {
+        "messages": [
+            AIMessage(
+                content=(
+                    "The AI service encountered an error. "
+                    "Please try again later."
+                )
+            )
+        ]
+            }
 
-        raise
 
-tool_node = ToolNode(tools)
+    except Exception as e:
+
+        print("LLM ERROR:", repr(e))
+
+        return {
+            "messages": [
+                AIMessage(
+                    content=(
+                        "Sorry, something went wrong while processing "
+                        "your request. Please try again."
+                    )
+                )
+            ]
+        }
+
+
 
 def call_tools(state: AgentState):
+    routes = state.get("routes", [])
+
+    tools = get_tools_for_routes(routes)
+
+    if not tools:
+        return {
+            "messages": [
+                AIMessage(
+                    content="I couldn't find an appropriate tool for this request."
+                )
+            ]
+        }
+
+    tool_node = ToolNode(tools)
+
     result = tool_node.invoke(state)
 
     return {
@@ -132,109 +186,6 @@ def should_continue(state: AgentState):
 
     return END
 
-def should_summarize(state: AgentState):
-    messages = state["messages"]
-
-    if get_total_tokens(messages) > MAX_LLM_TOKENS:
-        print("should_summarize")
-        return "summarize"
-    print("llm")
-    return "llm"
-
-def summarize_conversation(state: AgentState):
-    messages = state["messages"]
-
-    if get_total_tokens(messages) < MAX_LLM_TOKENS:
-        return {}
-    
-    existing_summary = None
-    regular_messages = []
-
-    for m in messages:
-        if isinstance(m, SystemMessage) and "Global Conversation Summary:" in m.content:
-            existing_summary = m
-        else:
-            regular_messages.append(m)
-
-    recent_messages = trim_messages(
-        messages,
-        max_tokens=MAX_LLM_TOKENS, 
-        strategy="last",
-        token_counter=get_total_tokens,    
-        allow_partial=False   
-    )
-
-    recent_ids = {m.id for m in recent_messages if m.id}
-    old_messages = [m for m in messages if m.id not in recent_ids]
-
-    if not old_messages:
-        return {}
-
-    previous_summary = (
-        existing_summary.content
-        if existing_summary
-        else "None"
-    )
-
-    conversation_text = "\n".join(
-        f"{message.type}: {message.content}"
-        for message in old_messages
-        if message.content
-    )
-
-    summary_prompt = f"""
-        Summarize the previous business-agent conversation.
-        Maximum: 150-250 words.
-        Keep ONLY information that could help answer future user questions.
-
-        Preserve:
-        - important user requests
-        - relevant business context
-        - important IDs
-        - important dates
-        - numerical results
-        - conclusions
-        - information needed to understand follow-up questions
-
-        Remove:
-        - greetings
-        - unnecessary wording
-        - irrelevant conversation.
-        - Repeated answers
-        - Tool arguments
-        - Raw database documents
-        - Product/order/customer lists
-        - ObjectIds
-        - Timestamps unless important
-        - Unnecessary explanations
-
-        Previous summary:
-        {previous_summary}
-
-        Older conversation:
-        {conversation_text}
-        """
-    try:
-        response = llm.invoke(summary_prompt)
-        print(response)
-        summary_text = response.content if response and response.content else ""
-    except Exception:
-        summary_text = ""
-    if not summary_text.strip():
-        summary_text = f"Previous conversation containing {len(old_messages)} earlier messages and tool interactions."   
-
-    summary_message = SystemMessage(content=f"Global Conversation Summary:\n{summary_text}")
-    messages_to_delete = old_messages.copy()
-    if existing_summary:
-        messages_to_delete.append(existing_summary)
-
-    delete_actions = [RemoveMessage(id=m.id) for m in messages_to_delete if m.id]
-
-    return {
-        "messages": delete_actions + [summary_message]
-    }
-
-
 def fallback_node(state):
     return {
         "messages": [
@@ -249,6 +200,7 @@ def fallback_node(state):
 
 builder = StateGraph(AgentState)
 builder.add_node("summarize", summarize_conversation)
+builder.add_node("router", router_node)
 builder.add_node("llm", call_llm)
 builder.add_node("tools", call_tools)
 builder.add_node("fallback", fallback_node)
@@ -258,10 +210,11 @@ builder.add_conditional_edges(
     should_summarize,
     {
         "summarize": "summarize",
-        "llm": "llm"
+        "router": "router"
     }
 )
-builder.add_edge("summarize", "llm")
+builder.add_edge("summarize", "router")
+builder.add_edge("router", "llm")
 builder.add_conditional_edges(
     "llm",
     should_continue,
