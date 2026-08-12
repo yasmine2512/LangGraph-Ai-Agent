@@ -1,40 +1,32 @@
-from app.graph import graph
-from app.database.DbConnection import test_connection
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from app.routes.agent import router as agent_router
+from app.database.DbConnection import connect_db, close_db
+from app.graph import create_graph
 
-def main():
-    thread_id = 0
-    test_connection()
-    print("AI Agent started!")
-    print("Type 'exit' to quit.\n")
-
-    while True:
-
-        config = {
-        "configurable": {
-            "thread_id": thread_id
-        }
-        }
-
-        message = input("You: ")
-        
-        if message.lower() == "exit":
-            print("Goodbye!")
-            break
-                
-
-        result = graph.invoke({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": message
-                }
-            ],
-            "tool_calls": 0
-        },config)
-
-        print(result["messages"][-1].content)
-        print()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global graph
+    print("Connecting to MongoDB...")
+    connect_db()
+    app.state.graph = create_graph()
+    yield
+    print("Closing MongoDB...")
+    close_db()
 
 
-if __name__ == "__main__":
-    main()
+app = FastAPI(
+    title="AI Agent API",
+    version="0.1.0",
+    lifespan=lifespan)
+
+@app.get("/")
+def root():
+    return {"message": "AI Agent API is running"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+app.include_router(agent_router)

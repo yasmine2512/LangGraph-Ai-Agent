@@ -5,20 +5,20 @@ from groq import APIStatusError,RateLimitError,BadRequestError
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from app.state import AgentState,get_recent_messages
 from bson import ObjectId
-from app.database.DbConnection import client,MONGODB_DATABASE
+from app.database.DbConnection import get_client,MONGODB_DATABASE
 from langchain_core.messages import SystemMessage, RemoveMessage, trim_messages
 from app.router import create_router, build_route_tools
 from app.summarizer import summarize_conversation,should_summarize
 from app.llm import llm
+from langchain_core.runnables import RunnableConfig
 
 MAX_TOOL_CALLS = 5
 
-organization_id = ObjectId("69d7d122f1b2c8ffe9d9c781")
 router = create_router(llm)
 
-route_tools = build_route_tools(organization_id)
+# route_tools = build_route_tools(organization_id)
 
-def get_tools_for_routes(routes):
+def get_tools_for_routes(routes,route_tools):
     tools = []
     seen = set()
 
@@ -41,10 +41,14 @@ def router_node(state: AgentState):
         "routes": routes
     }
 
-def call_llm(state: AgentState):
+def call_llm(state: AgentState, config: RunnableConfig):
+    organization_id = ObjectId(config["configurable"]["organization_id"])
+
+    route_tools = build_route_tools(organization_id)
+
     routes = state.get("routes", [])
 
-    tools = get_tools_for_routes(routes)
+    tools = get_tools_for_routes(routes,route_tools)
 
     if tools:
         model = llm.bind_tools(tools)
@@ -135,10 +139,13 @@ def call_llm(state: AgentState):
 
 
 
-def call_tools(state: AgentState):
+def call_tools(state: AgentState, config: RunnableConfig):
+
+    organization_id = ObjectId(config["configurable"]["organization_id"])
+    route_tools = build_route_tools(organization_id)
     routes = state.get("routes", [])
 
-    tools = get_tools_for_routes(routes)
+    tools = get_tools_for_routes(routes,route_tools)
 
     if not tools:
         return {
@@ -215,9 +222,17 @@ builder.add_conditional_edges(
 builder.add_edge("tools", "llm")
 builder.add_edge("fallback", END)
 
-checkpointer = MongoDBSaver(
-    client,
-    db_name=MONGODB_DATABASE
-)
+# checkpointer = MongoDBSaver(
+#     get_client(),
+#     db_name=MONGODB_DATABASE
+# )
 
-graph = builder.compile(checkpointer= checkpointer)
+# graph = builder.compile(checkpointer= checkpointer)
+
+def create_graph():
+    checkpointer = MongoDBSaver(
+        get_client(),
+        db_name=MONGODB_DATABASE
+    )
+
+    return builder.compile(checkpointer=checkpointer)

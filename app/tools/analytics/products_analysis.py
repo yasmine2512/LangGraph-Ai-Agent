@@ -1,11 +1,11 @@
 from langchain_core.tools import tool
-from app.database.DbConnection import db
+from app.database.DbConnection import get_db
 from bson import ObjectId
 from app.utils.dates import parse_date, get_period_dates
 import json
 
 def product_analysis(organization_id):
-
+    db = get_db()
     @tool
     def analyze_products(
         period: str | None = None,

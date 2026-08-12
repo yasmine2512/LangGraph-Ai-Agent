@@ -1,11 +1,11 @@
 from langchain_core.tools import tool
-from app.database.DbConnection import db
+from app.database.DbConnection import get_db
 from bson import ObjectId
 from datetime import datetime, timezone
 from app.utils.dates import parse_date
 
 def order_tools(organization_id: str):
-
+    db = get_db()
     @tool
     def get_orders(
         created_at_from: str | None = None,

@@ -7,18 +7,46 @@ load_dotenv()
 MONGODB_URI = os.getenv("MONGODB_URI")
 MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "automated_agent")
 
-if not MONGODB_URI:
-    raise ValueError("MONGODB_URI is not defined in .env")
+_client = None
 
-client = MongoClient(MONGODB_URI)
-
-db = client[MONGODB_DATABASE]
+_db = None
 
 
-def test_connection():
-    try:
-        client.admin.command("ping")
-        print("MongoDB connected successfully!")
-    except Exception as e:
-        print("MongoDB connection failed:", e)
+def connect_db():
+    global _client, _db
 
+    if _client is None:
+        _client = MongoClient(MONGODB_URI)
+
+        _client.admin.command("ping")
+
+        _db = _client[MONGODB_DATABASE]
+
+        print("MongoDB connected")
+
+    return _db
+
+
+def get_db():
+    if _db is None:
+        raise RuntimeError("Database is not initialized")
+
+    return _db
+
+def get_client():
+    if _client is None:
+        raise RuntimeError("MongoDB client is not initialized")
+
+    return _client
+
+
+def close_db():
+    global _client, _db
+
+    if _client:
+        _client.close()
+        _client = None
+        _db = None
+
+        print("MongoDB connection closed")
+        

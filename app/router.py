@@ -61,6 +61,8 @@ ORDER_ANALYSIS:
 Order statistics.
 Can count orders, calculate averages, analyze statuses,
 trends, and orders by customer/product.
+Do NOT use for simply retrieving or counting orders when no
+analysis or aggregation is requested.
 
 PRODUCT_INFO:
 Basic product records.

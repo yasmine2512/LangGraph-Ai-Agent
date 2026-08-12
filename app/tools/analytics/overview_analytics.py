@@ -1,10 +1,10 @@
 from langchain_core.tools import tool
-from app.database.DbConnection import db
+from app.database.DbConnection import get_db
 from app.utils.dates import get_period_dates
 
 
 def overview_tools(organization_id):
-
+    db = get_db()
     @tool
     def analyze_business(period: str = "this_month"):
         """
