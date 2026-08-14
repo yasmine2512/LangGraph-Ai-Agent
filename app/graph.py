@@ -222,13 +222,6 @@ builder.add_conditional_edges(
 builder.add_edge("tools", "llm")
 builder.add_edge("fallback", END)
 
-# checkpointer = MongoDBSaver(
-#     get_client(),
-#     db_name=MONGODB_DATABASE
-# )
-
-# graph = builder.compile(checkpointer= checkpointer)
-
 def create_graph():
     checkpointer = MongoDBSaver(
         get_client(),

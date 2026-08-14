@@ -10,6 +10,8 @@ class AgentRequest(BaseModel):
     organization_id: str
     thread_id: str
 
+class DeleteThreadRequest(BaseModel):
+    thread_id: str
 
 @router.post("/chat")
 def chat_with_agent(request: Request,
@@ -48,3 +50,19 @@ def chat_with_agent(request: Request,
             status_code=500,
             detail="Failed to process the request"
         )
+
+@router.delete("/thread")
+def delete_thread(
+    request: Request,
+    body: DeleteThreadRequest
+):
+    graph = request.app.state.graph
+
+    checkpointer = graph.checkpointer
+
+    checkpointer.delete_thread(body.thread_id)
+
+    return {
+        "message": "Thread deleted successfully",
+        "thread_id": body.thread_id
+    }

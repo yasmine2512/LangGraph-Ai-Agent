@@ -25,9 +25,9 @@ def customer_analysis(organization_id: str):
         - top_customers: rank customers by overall value/performance
         - most_orders: customers with the most orders
         - highest_spending: customers with the highest completed-order spending
-        - new_customers: customers created during a period
+        - new_customers: count customers created during a period
         - repeat_customers: customers with multiple orders
-        - active_customers: customers who ordered during a period
+        - active_customers: count customers who placed orders during a period; excludes canceled orders by default, or filters by the specified status when provided.
         - average_clv: average customer lifetime value
         - spending_distribution: customers grouped by spending ranges
 
