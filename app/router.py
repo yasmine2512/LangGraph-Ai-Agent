@@ -43,12 +43,12 @@ A question may require one OR MORE routes.
 CUSTOMER_INFO:
 Basic customer records and retrieval.
 Can search, list, retrieve, count, and filter customers.
-Use when the user asks about customer name, email, phone, address, creation
-date, or wants to find a customer by name or other basic filters.
-Does not perform customer behavior or spending analysis.
+Use when counting/filtering customers themselves.
+Does not analyze their orders, spending, or behavior.
 
 CUSTOMER_ANALYSIS:
 Customer business performance and behavior.
+Use when customers are evaluated based on orders, spending, or activity.
 Can calculate customer order counts, total spending, rankings,
 repeat customers, active customers, new customers, and lifetime value.
 
@@ -67,15 +67,15 @@ analysis or aggregation is requested.
 PRODUCT_INFO:
 Basic product records.
 Can search, retrieve, list, count, and filter products.
+Use when counting/filtering products themselves.
 Does not calculate sales or revenue.
-Use this route when a product must first be identified before another
-route can analyze it.
+
 
 PRODUCT_ANALYSIS:
 Product sales performance.
+Use when products are evaluated based on orders, units sold, or revenue.
 Can calculate units sold and revenue, rank products,
-find best sellers, analyze product/category sales,
-and calculate revenue for a specific product.
+find best sellers, and analyze product/category sales.
 
 INVENTORY:
 Current stock and inventory.
@@ -109,6 +109,9 @@ Examples:
 "How many orders did Ahmed make?"
 → [customer_info,customer_analysis]
 
+"How many customers have completed orders?"
+→ [customer_analysis]
+
 "How many orders did we receive?"
 → [order_info]
 
@@ -132,6 +135,10 @@ Examples:
 
 "Which products are low in stock?"
 → [inventory]
+
+COUNTING RULE:
+If counting records themselves, use INFO.
+If counting entities based on orders, sales, spending, or activity, use ANALYSIS.
 
 IMPORTANT ROUTING RULE:
 The current user message may depend on previous messages.

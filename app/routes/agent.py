@@ -48,7 +48,7 @@ def chat_with_agent(request: Request,
         print("Agent error:", repr(e))
         raise HTTPException(
             status_code=500,
-            detail="Failed to process the request"
+            detail="The AI assistant encountered an error while processing your request."
         )
 
 @router.delete("/thread")
@@ -57,9 +57,7 @@ def delete_thread(
     body: DeleteThreadRequest
 ):
     graph = request.app.state.graph
-
     checkpointer = graph.checkpointer
-
     checkpointer.delete_thread(body.thread_id)
 
     return {

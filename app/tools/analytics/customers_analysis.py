@@ -10,7 +10,8 @@ def customer_analysis(organization_id: str):
         period: str | None = None,
         analysis: str | None = None,
         customer_id: str | None = None,
-        limit: int | None = None
+        limit: int | None = None,
+        status: str | None = None
     ):
         """
         Analyze customer behavior and performance.
@@ -30,6 +31,11 @@ def customer_analysis(organization_id: str):
         - active_customers: count customers who placed orders during a period; excludes canceled orders by default, or filters by the specified status when provided.
         - average_clv: average customer lifetime value
         - spending_distribution: customers grouped by spending ranges
+
+        status:
+        - optional order status filter
+        - if not provided, completed orders are used for spending/rankings
+        - for active_customers, canceled orders are excluded by default
 
         period:
         today, this_week, this_month, last_month, this_year,
@@ -58,7 +64,7 @@ def customer_analysis(organization_id: str):
             query = {
                 "organization": organization_id,
                 "customer": customer_oid,
-                "status": "completed"
+                "status": status or "completed"
             }
 
             if start:
@@ -126,11 +132,13 @@ def customer_analysis(organization_id: str):
         if analysis == "active_customers":
 
             start, end = get_period_dates(period)
-
             query = {
-                "organization": organization_id,
-                "status": {"$ne": "canceled"}
+                "organization": organization_id
             }
+            if status:
+                query["status"] = status
+            else:
+                query["status"] = {"$ne": "canceled"}
 
             if start:
                 query["createdAt"] = {
