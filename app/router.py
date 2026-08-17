@@ -93,9 +93,15 @@ Use for broad questions about how the business is doing.
 Provides a compact overview of revenue, orders, customers,
 average order value, and comparisons.
 
+RAG:
+Information contained in uploaded documents.
+Use when the user asks about company policies,
+documentation, procedures, uploaded files, or other
+knowledge that is not available through business database tools.
+
 GENERAL:
 Questions that don't require business database tools.
-Also use for RAG/document knowledge when appropriate.
+General questions.
 
 
 Examples:
