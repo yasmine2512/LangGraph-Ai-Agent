@@ -1,30 +1,56 @@
 import fitz
+import httpx
 import os
 
-def load_pdf(file_path: str) -> str:
-    document = fitz.open(file_path)
+async def load_pdf_from_url(url: str):
 
-    text = ""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        response.raise_for_status()
+
+    document = fitz.open(
+        stream=response.content,
+        filetype="pdf"
+    )
+    content_type = response.headers.get("content-type", "")
+
+    if "application/pdf" not in content_type:
+        raise ValueError(
+            f"URL did not return a PDF. Content-Type: {content_type}"
+        )
+
+    text_parts = []
 
     for page in document:
-        text += page.get_text()
+        text_parts.append(page.get_text())
 
     document.close()
 
-    return text
+    return "\n".join(text_parts)
 
-def load_txt(file_path: str) -> str:
-    with open(file_path, "r", encoding="utf-8") as file:
-        return file.read()
+async def load_txt_from_url(url: str):
 
-def load_document(file_path: str) -> str:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        response.raise_for_status()
 
-    extension = os.path.splitext(file_path)[1].lower()
+    return response.content.decode("utf-8")
+
+async def load_document_from_url(
+    url: str,
+    filename: str
+):
+
+    extension = os.path.splitext(
+        filename
+    )[1].lower()
 
     if extension == ".pdf":
-        return load_pdf(file_path)
+        return await load_pdf_from_url(url)
 
     if extension == ".txt":
-        return load_txt(file_path)
+        return await load_txt_from_url(url)
 
-    raise ValueError("Unsupported file type")   
+    raise ValueError(
+        "Unsupported file type"
+    ) 

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from app.routes.agent import router as agent_router
+from app.routes.rag import router as rag_router
 from app.database.DbConnection import connect_db, close_db
 from app.graph import create_graph
 
@@ -30,3 +31,4 @@ def health():
     return {"status": "ok"}
 
 app.include_router(agent_router)
+app.include_router(rag_router)

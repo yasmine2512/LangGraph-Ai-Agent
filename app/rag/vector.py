@@ -1,51 +1,68 @@
-import faiss
-import numpy as np
-
 from .embeddings import embed_texts, embed_query
+from app.database.DbConnection import get_db
 
+def get_document_chunks():
+    db = get_db()
+    return db["document_chunks"]
 
 class VectorStore:
+    
 
-    def __init__(self, dimension=384):
-        self.index = faiss.IndexFlatIP(dimension)
-        self.documents = []
-
-    def add_documents(self, chunks):
+    def add_documents(self,chunks,organization_id,file_id,filename):
+        document_chunks = get_document_chunks()
         embeddings = embed_texts(chunks)
 
-        embeddings = np.array(
-            embeddings,
-            dtype="float32"
-        )
+        documents = []
 
-        self.index.add(embeddings)
-
-        self.documents.extend(chunks)
-
-    def search(self, query, k=5):
-
-        query_embedding = embed_query(query)
-
-        query_embedding = np.array(
-            [query_embedding],
-            dtype="float32"
-        )
-
-        scores, indexes = self.index.search(
-            query_embedding,
-            k
-        )
-
-        results = []
-
-        for score, index in zip(scores[0], indexes[0]):
-
-            if index == -1:
-                continue
-
-            results.append({
-                "content": self.documents[index],
-                "score": float(score)
+        for i, (chunk, embedding) in enumerate(
+            zip(chunks, embeddings)
+        ):
+            documents.append({
+                "organization": organization_id,
+                "fileId": file_id,
+                "filename": filename,
+                "content": chunk,
+                "embedding": embedding.tolist(),
+                "chunkIndex": i
             })
+
+        if documents:
+            document_chunks.insert_many(documents)
+
+
+    def search(self,query,organization_id,k=5):
+        document_chunks = get_document_chunks()
+        query_embedding = embed_query(query)
+        pipeline = [
+            {
+                "$vectorSearch": {
+                    "index": "vector_index",
+                    "path": "embedding",
+                    "queryVector": query_embedding.tolist(),
+                    "numCandidates": 50,
+                    "limit": k,
+
+                    "filter": {
+                        "organization": organization_id
+                    }
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "content": 1,
+                    "filename": 1,
+                    "fileId": 1,
+                    "chunkIndex": 1,
+                    "score": {
+                        "$meta": "vectorSearchScore"
+                    }
+                }
+            }
+        ]
+
+        results = list(
+            document_chunks.aggregate(pipeline)
+        )
 
         return results

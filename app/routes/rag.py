@@ -1,54 +1,47 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter
 import os
 import uuid
-
-from app.rag.loader import load_document
+from pydantic import BaseModel
+from app.rag.loader import load_document_from_url
 from app.rag.service import split_document
+from app.rag.vector import VectorStore
+
 
 router = APIRouter(
     prefix="/api/rag",
     tags=["RAG"]
 )
 
-UPLOAD_DIR = "uploads"
+vector_store = VectorStore()
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+class ProcessDocumentRequest(BaseModel):
+    file_id: str
+    organization_id: str
+    filename: str
+    file_url: str
 
 
 @router.post("/upload")
 async def upload_document(
-    organization_id: str,
-    file: UploadFile = File(...)
+    request: ProcessDocumentRequest
 ):
 
-    allowed_extensions = [".pdf", ".txt"]
-
-    extension = os.path.splitext(file.filename)[1].lower()
-
-    if extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail="Only PDF and TXT files are supported."
-        )
-
-    file_id = str(uuid.uuid4())
-
-    file_path = os.path.join(
-        UPLOAD_DIR,
-        f"{file_id}{extension}"
+    text = await load_document_from_url(
+        request.file_url,
+        request.filename
     )
-
-    content = await file.read()
-
-    with open(file_path, "wb") as f:
-        f.write(content)
-
-    text = load_document(file_path)
 
     chunks = split_document(text)
 
+    vector_store.add_documents(
+        chunks=chunks,
+        organization_id=request.organization_id,
+        file_id=request.file_id,
+        filename=request.filename
+    )
+
     return {
-        "message": "Document uploaded successfully",
-        "filename": file.filename,
+        "message": "Document processed successfully",
+        "file_id": request.file_id,
         "chunks": len(chunks)
     }
