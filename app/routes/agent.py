@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-from app.database.DbConnection import connect_db,close_db
+from app.state import extract_text
 import traceback
 
 router = APIRouter(prefix="/api/agent", tags=["Agent"])
@@ -40,9 +40,10 @@ def chat_with_agent(request: Request,
         )
 
         last_message = result["messages"][-1]
+        text = extract_text(last_message.content)
 
         return {
-            "message": last_message.content
+            "message": text
         }
 
     except Exception as e:

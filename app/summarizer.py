@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from langchain_core.messages import SystemMessage, RemoveMessage
 import tiktoken
 from app.llm import llm
-from app.state import AgentState,get_recent_messages
+from app.state import AgentState,get_recent_messages,extract_text
 
 MAX_LLM_TOKENS = 5000
 
@@ -20,7 +20,6 @@ def should_summarize(state: AgentState):
     messages = state["messages"]
 
     if get_total_tokens(messages) > MAX_LLM_TOKENS:
-        print("should_summarize")
         return "summarize"
     return "router"
 
@@ -32,6 +31,7 @@ def summarize_conversation(state: AgentState):
     
     existing_summary = None
     regular_messages = []
+    print("Summarizing ....")
 
     for m in messages:
         if isinstance(m, SystemMessage) and "Global Conversation Summary:" in m.content:
@@ -93,8 +93,9 @@ def summarize_conversation(state: AgentState):
         """
     try:
         response = llm.invoke(summary_prompt)
-        print(response)
-        summary_text = response.content if response and response.content else ""
+        print("Summary:",response,"\n")
+        summary_text = extract_text(response.content) if response and response.content else ""
+
     except Exception:
         summary_text = ""
     if not summary_text.strip():

@@ -1,8 +1,5 @@
-from langchain_groq import ChatGroq
-import os
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-llm = ChatGroq(
-    model="openai/gpt-oss-20b",
-    api_key= os.getenv("GROQ_API_KEY"),
-    temperature=0
+llm = ChatGoogleGenerativeAI(
+    model="gemini-3.5-flash-lite",
 )

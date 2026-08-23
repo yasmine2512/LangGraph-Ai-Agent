@@ -1,22 +1,20 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
 from langchain_core.messages import AIMessage
-from groq import APIStatusError,RateLimitError,BadRequestError
+from langchain_google_genai._common import GoogleGenerativeAIError
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from app.state import AgentState,get_recent_messages
 from bson import ObjectId
 from app.database.DbConnection import get_client,MONGODB_DATABASE
-from langchain_core.messages import SystemMessage, RemoveMessage, trim_messages
 from app.router import create_router, build_route_tools
 from app.summarizer import summarize_conversation,should_summarize
 from app.llm import llm
+from fastapi import HTTPException
 from langchain_core.runnables import RunnableConfig
 
 MAX_TOOL_CALLS = 5
 
 router = create_router(llm)
-
-# route_tools = build_route_tools(organization_id)
 
 def get_tools_for_routes(routes,route_tools):
     tools = []
@@ -55,6 +53,7 @@ def call_llm(state: AgentState, config: RunnableConfig):
     else:
         model = llm
 
+    print("State:",state["messages"],"\n")
     context = get_recent_messages(
         state["messages"],
         max_human_turns=3
@@ -62,64 +61,22 @@ def call_llm(state: AgentState, config: RunnableConfig):
 
     try:
         response = model.invoke(context)
-
+        print("LLM response:", response)
         return {
             "messages": [response]
         }
     
-    except RateLimitError as e:
-        print("Groq rate limit reached:", e)
-
-        return {
-            "messages": [
-                AIMessage(
-                    content=(
-                        " The AI service has reached its usage limit. "
-                        "Please try again later."
-                    )
-                )
-            ]
-        }
-    except BadRequestError as e:
-    
-        print("LLM BadRequestError:", e)
-
-        return {
-            "messages": [
-                AIMessage(
-                    content=(
-                        "Sorry, I couldn't process that request because "
-                        "the conversation context became invalid. "
-                        "Please try the request again."
-                    )
-                )
-            ]
-        }
-    
-    except APIStatusError as e:
-
-        if e.status_code == 413 or "too large" in str(e).lower():
-            return {
-                "messages": [
-                    AIMessage(
-                        content=(
-                            "I couldn't perform that analysis because "
-                            "the request was too large. Please try "
-                            "a more specific question."
-                        )
-                    )
-                ]
-            }
-        return {
-        "messages": [
-            AIMessage(
-                content=(
-                    "The AI service encountered an error. "
-                    "Please try again later."
-                )
+    except GoogleGenerativeAIError as e:
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            raise HTTPException(
+                status_code=429,
+                detail="AI rate limit exceeded"
             )
-        ]
-            }
+
+        raise HTTPException(
+            status_code=500,
+            detail="AI service error"
+        )
 
 
     except Exception as e:

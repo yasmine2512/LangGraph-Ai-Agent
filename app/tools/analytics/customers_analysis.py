@@ -23,7 +23,7 @@ def customer_analysis(organization_id: str):
         Use count_customers for simple customer counts.
 
         analysis:
-        - top_customers: rank customers by overall value/performance
+        - top_customers: rank customers by total completed-order spending
         - most_orders: customers with the most orders
         - highest_spending: customers with the highest completed-order spending
         - new_customers: count customers created during a period
@@ -47,7 +47,7 @@ def customer_analysis(organization_id: str):
 
         Keep limit small unless the user requests more.
         """
-
+        print("Customer analysis Called")
         if limit is None:
             limit = 5
 

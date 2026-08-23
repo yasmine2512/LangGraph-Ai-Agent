@@ -30,7 +30,7 @@ class VectorStore:
             document_chunks.insert_many(documents)
 
 
-    def search(self,query,organization_id,k=5):
+    def search(self,query,organization_id,k=3):
         document_chunks = get_document_chunks()
         query_embedding = embed_query(query)
         pipeline = [

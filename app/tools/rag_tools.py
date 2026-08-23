@@ -23,23 +23,21 @@ def rag_tools(organization_id: str):
         results = vector_store.search(
             question,
             organization_id,
-            k=5
+            k=3
         )
         if not results:
             return "No relevant information was found in the organization's documents."
-        formatted_results = []
+        
+        print("\n\n".join(
+        f"Source: {r['filename']}\n"
+        f"{r['content']}"
+        for r in results
+    ))
 
-        for result in results:
-            formatted_results.append(
-                f"""
-                File: {result.get("filename", "Unknown")}
-                Chunk: {result.get("chunkIndex", "Unknown")}
-                Relevance: {result.get("score", 0):.3f}
-                Content:
-                {result.get("content", "")}
-                """
-            )
-        print("\n\n---\n\n".join(formatted_results))
-        return "\n\n---\n\n".join(formatted_results)
+        return "\n\n".join(
+        f"Source: {r['filename']}\n"
+        f"{r['content']}"
+        for r in results
+    )
 
     return [search_knowledge_base]
