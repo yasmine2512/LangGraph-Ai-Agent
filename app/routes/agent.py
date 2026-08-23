@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from app.database.DbConnection import connect_db,close_db
+import traceback
 
 router = APIRouter(prefix="/api/agent", tags=["Agent"])
 
@@ -46,6 +47,8 @@ def chat_with_agent(request: Request,
 
     except Exception as e:
         print("Agent error:", repr(e))
+        traceback.print_exc()
+
         raise HTTPException(
             status_code=500,
             detail="The AI assistant encountered an error while processing your request."

@@ -11,6 +11,7 @@ from app.tools.analytics.orders_analysis import order_analysis
 from app.tools.analytics.products_analysis import product_analysis
 from app.tools.analytics.sales_analysis import sales_tools
 from app.tools.analytics.overview_analytics import overview_tools
+from app.tools.rag_tools import rag_tools
 
 class RouteDecision(BaseModel):
     routes: list[
@@ -24,6 +25,7 @@ class RouteDecision(BaseModel):
             "sales",
             "inventory",
             "overview",
+            "rag",
             "general",
         ]
     ] = Field(
@@ -206,4 +208,5 @@ def build_route_tools(organization_id):
         "inventory": inventory_tools(organization_id),
 
         "overview": overview_tools(organization_id),
+        "rag": rag_tools(organization_id)
     }

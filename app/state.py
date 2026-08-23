@@ -23,6 +23,8 @@ def get_recent_messages(messages, max_human_turns=3):
     current_turn = []
     human_count = 0
     for msg in reversed(non_system_messages):
+        if msg.type == "tool":
+            continue
         current_turn.insert(0, msg)
         if msg.type == "human":
             human_count += 1
