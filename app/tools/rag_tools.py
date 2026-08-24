@@ -19,21 +19,15 @@ def rag_tools(organization_id: str):
         search returned no useful results.
 
         """
-        print("RAG TOOL CALLED")
         results = vector_store.search(
             question,
             organization_id,
             k=3
         )
+
         if not results:
             return "No relevant information was found in the organization's documents."
         
-        print("\n\n".join(
-        f"Source: {r['filename']}\n"
-        f"{r['content']}"
-        for r in results
-    ))
-
         return "\n\n".join(
         f"Source: {r['filename']}\n"
         f"{r['content']}"

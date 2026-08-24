@@ -9,6 +9,7 @@ embedding_model = SentenceTransformer(
 def embed_texts(texts):
     return embedding_model.encode(
         texts,
+        batch_size=16,
         normalize_embeddings=True
     )
 

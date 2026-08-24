@@ -1,5 +1,6 @@
 from .embeddings import embed_texts, embed_query
 from app.database.DbConnection import get_db
+from bson import ObjectId
 
 def get_document_chunks():
     db = get_db()
@@ -18,8 +19,8 @@ class VectorStore:
             zip(chunks, embeddings)
         ):
             documents.append({
-                "organization": organization_id,
-                "fileId": file_id,
+                "organization": ObjectId(organization_id),
+                "fileId": ObjectId(file_id),
                 "filename": filename,
                 "content": chunk,
                 "embedding": embedding.tolist(),

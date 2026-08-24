@@ -53,7 +53,6 @@ def call_llm(state: AgentState, config: RunnableConfig):
     else:
         model = llm
 
-    print("State:",state["messages"],"\n")
     context = get_recent_messages(
         state["messages"],
         max_human_turns=3

@@ -1,6 +1,4 @@
 from fastapi import APIRouter
-import os
-import uuid
 from pydantic import BaseModel
 from app.rag.loader import load_document_from_url
 from app.rag.service import split_document
