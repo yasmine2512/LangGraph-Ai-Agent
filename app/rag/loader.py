@@ -1,4 +1,4 @@
-import fitz
+import pymupdf
 import httpx
 import os
 
@@ -8,7 +8,7 @@ async def load_pdf_from_url(url: str):
         response = await client.get(url)
         response.raise_for_status()
 
-    document = fitz.open(
+    document = pymupdf.open(
         stream=response.content,
         filetype="pdf"
     )
