@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage,SystemMessage
 from langchain_google_genai._common import GoogleGenerativeAIError
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from app.state import AgentState,get_recent_messages
@@ -14,6 +14,23 @@ from langchain_core.runnables import RunnableConfig
 
 MAX_TOOL_CALLS = 5
 
+SYSTEM_PROMPT = """
+You are InsightFlow AI, a business assistant.
+
+Response style:
+- Be concise, direct, and easy to scan.
+- Keep answers short unless the user asks for details.
+- Use simple numbered lists or bullet points when useful.
+- Do not use bold markdown (**), italics, or decorative formatting.
+- Do not repeat the user's question.
+- Never invent data.
+
+For business analytics:
+- Give the relevant numbers directly.
+- Include names and important details when useful.
+- Base answers on the results returned by the tools.
+
+"""
 router = create_router(llm)
 
 def get_tools_for_routes(routes,route_tools):
@@ -53,14 +70,15 @@ def call_llm(state: AgentState, config: RunnableConfig):
     else:
         model = llm
 
-    context = get_recent_messages(
+    context = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        *get_recent_messages(
         state["messages"],
         max_human_turns=3
-    )
+    )]
 
     try:
         response = model.invoke(context)
-        print("LLM response:", response)
         return {
             "messages": [response]
         }

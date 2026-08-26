@@ -12,12 +12,14 @@ def rag_tools(organization_id: str):
         Use this when the user asks about information contained
         in uploaded documents.
 
-        IMPORTANT:
-        - The returned results contain the relevant document passages.
-        - After receiving the results, answer the user's question using them.
-        - Do not call this tool again for the same question unless the first
-        search returned no useful results.
+        The results contain document passages and their source filenames.
 
+        After receiving the results:
+        - Answer using only the retrieved passages.
+        - Mention the source filename for information taken from a document.
+        - Do not claim information exists if no relevant passages were returned.
+        - Do not call this tool again for the same question if useful results
+        were already returned.
         """
         results = vector_store.search(
             question,
