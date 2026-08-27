@@ -17,11 +17,10 @@ The agent can automatically select business analytics tools, search an organizat
 | LangChain                   | LLM integration, tools, and tool calling                        |
 | LangGraph                   | Agent workflow, routing, state management, and execution        |
 | Gemini                      | Large language model inference                                  |
-| Google GenAI                | Gemini API integration                                          |
+| Google GenAI                | Gemini API and embedding integration                            |
 | MongoDB Atlas               | Business data, documents, vectors, and conversation persistence |
 | MongoDB Atlas Vector Search | Semantic similarity search over document embeddings             |
 | Sentence Transformers       | Document and query embeddings                                   |
-| `all-MiniLM-L6-v2`          | Embedding model used for semantic search                        |
 | MongoDBSaver                | LangGraph checkpoint persistence                                |
 | Pydantic                    | Request and data validation                                     |
 | PyMuPDF                     | PDF document text extraction                                    |
@@ -163,13 +162,11 @@ Grounded Answer
 
 ### Embeddings
 
-The project uses Sentence Transformers with:
+The project uses Google Gemini Embeddings through the Google GenAI SDK.
 
-```text
-all-MiniLM-L6-v2
-```
+A genai.Client is initialized using the GEMINI_API_KEY environment variable. Document chunks and user queries are converted into embeddings using Gemini and stored/searched through MongoDB Atlas Vector Search.
 
-The same embedding model is used for document chunks and user queries so that their vectors exist in the same semantic space.
+The same embedding model is used for both document chunks and user queries so that their vectors exist in the same semantic space.
 
 ### Vector Search
 
@@ -641,10 +638,11 @@ The service requires:
 * MongoDB Atlas
 * MongoDB Atlas Vector Search
 * Gemini API key
-* Sentence Transformers
 * FastAPI
 * LangChain
 * LangGraph
+* PyMuPDF
+* Pydantic
 
 The MongoDB Atlas cluster must contain the required collections and a configured vector search index for the knowledge-base functionality.
 

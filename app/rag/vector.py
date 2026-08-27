@@ -1,4 +1,4 @@
-from .embeddings import embed_texts, embed_query
+from .embeddings import embed_documents, embed_query
 from app.database.DbConnection import get_db
 from bson import ObjectId
 
@@ -10,9 +10,14 @@ class VectorStore:
     
 
     def add_documents(self,chunks,organization_id,file_id,filename):
+        print(f"VectorStore: received {len(chunks)} chunks", flush=True)
         document_chunks = get_document_chunks()
-        embeddings = embed_texts(chunks)
 
+        embeddings = embed_documents(chunks)
+        print(
+        f"VectorStore: received {len(embeddings)} embeddings",
+        flush=True
+        )
         documents = []
 
         for i, (chunk, embedding) in enumerate(
@@ -23,7 +28,7 @@ class VectorStore:
                 "fileId": ObjectId(file_id),
                 "filename": filename,
                 "content": chunk,
-                "embedding": embedding.tolist(),
+                "embedding": embedding,
                 "chunkIndex": i
             })
 
@@ -39,12 +44,12 @@ class VectorStore:
                 "$vectorSearch": {
                     "index": "vector_index",
                     "path": "embedding",
-                    "queryVector": query_embedding.tolist(),
+                    "queryVector": query_embedding,
                     "numCandidates": 50,
                     "limit": k,
 
                     "filter": {
-                        "organization": organization_id
+                        "organization": ObjectId(organization_id)
                     }
                 }
             },
