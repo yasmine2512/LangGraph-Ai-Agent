@@ -10,14 +10,8 @@ class VectorStore:
     
 
     def add_documents(self,chunks,organization_id,file_id,filename):
-        print(f"VectorStore: received {len(chunks)} chunks", flush=True)
         document_chunks = get_document_chunks()
-
         embeddings = embed_documents(chunks)
-        print(
-        f"VectorStore: received {len(embeddings)} embeddings",
-        flush=True
-        )
         documents = []
 
         for i, (chunk, embedding) in enumerate(

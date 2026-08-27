@@ -31,7 +31,6 @@ def summarize_conversation(state: AgentState):
     
     existing_summary = None
     regular_messages = []
-    print("Summarizing ....")
 
     for m in messages:
         if isinstance(m, SystemMessage) and "Global Conversation Summary:" in m.content:

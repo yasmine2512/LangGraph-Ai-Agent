@@ -47,7 +47,6 @@ def customer_analysis(organization_id: str):
 
         Keep limit small unless the user requests more.
         """
-        print("Customer analysis Called")
         if limit is None:
             limit = 5
 

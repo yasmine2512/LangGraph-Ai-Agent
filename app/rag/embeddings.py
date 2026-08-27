@@ -36,8 +36,6 @@ def embed_documents(chunks):
         )
     )
 
-    print(f"Received {len(response.embeddings)} embeddings")
-
     return [
         embedding.values
         for embedding in response.embeddings
