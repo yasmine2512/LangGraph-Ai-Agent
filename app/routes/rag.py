@@ -10,7 +10,15 @@ router = APIRouter(
     tags=["RAG"]
 )
 
-vector_store = VectorStore()
+vector_store = None
+
+def get_vector_store():
+    global vector_store
+
+    if vector_store is None:
+        vector_store = VectorStore()
+
+    return vector_store
 
 class ProcessDocumentRequest(BaseModel):
     file_id: str
@@ -23,6 +31,7 @@ class ProcessDocumentRequest(BaseModel):
 async def upload_document(
     request: ProcessDocumentRequest
 ):
+    vector_store = get_vector_store()
 
     text = await load_document_from_url(
         request.file_url,
