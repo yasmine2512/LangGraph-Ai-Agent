@@ -616,10 +616,6 @@ MONGODB_DATABASE=your_database
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
-Additional environment variables may be required depending on the deployment configuration.
-
-Never commit `.env` files or API keys to Git.
-
 ### 6. Run the service
 
 ```bash
